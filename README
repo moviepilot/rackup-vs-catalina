@@ -1,0 +1,50 @@
+RACKUP vs CATALINA
+==================
+
+This is a minimal setup (sinatra app, jruby-rack, warbler) to 
+demonstrate the fact, that an OPTIONS request is not handled
+by sinatra when running in Tomcat 7.
+
+Assume the following App:
+
+    class MyApp < Sinatra::Base
+      get '/' do
+        'Hello World!'
+      end
+
+      options '/' do
+        headers['X-Good-Bye-World'] = 'true'
+        headers['Allow'] = 'GET'
+        halt 200
+      end
+    end
+
+when running the app via Webrick, the following OPTIONS request work:
+
+    $ curl -v -XOPTIONS http://localhost:4567/
+
+    HTTP/1.1 200 OK
+    X-Frame-Options: sameorigin
+    X-Xss-Protection: 1; mode=block
+    Content-Type: text/html;charset=utf-8
+    X-Good-Bye-World: true
+    Allow: GET
+    Content-Length: 0
+    Server: WEBrick/1.3.1 (Ruby/1.8.7/2012-02-22)
+    Date: Fri, 12 Oct 2012 16:15:18 GMT
+    Connection: Keep-Alive
+
+Now trying the same request in Tomcat, it produces the following response:
+
+    $ http options localhost:8080
+
+    HTTP/1.1 200 OK
+    Server: Apache-Coyote/1.1
+    Allow: GET, HEAD, POST, PUT, DELETE, OPTIONS
+    Content-Length: 0
+    Date: Fri, 12 Oct 2012 16:17:18 GMT
+
+The rackapp itself is correctly mounted, a GET request to / returns the 
+expected response.
+
+
